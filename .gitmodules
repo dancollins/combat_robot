@@ -1,3 +1,6 @@
 [submodule "ExpressLRS"]
 	path = ExpressLRS
 	url = git@github.com:dancollins/ExpressLRS.git
+[submodule "AM32"]
+	path = AM32
+	url = git@github.com:dancollins/AM32.git
