@@ -1,0 +1,3 @@
+[submodule "ExpressLRS"]
+	path = ExpressLRS
+	url = git@github.com:dancollins/ExpressLRS.git
