@@ -1,0 +1,101 @@
+(footprint "m3-power-switch"
+	(version 20240108)
+	(generator "pcbnew")
+	(generator_version "8.0")
+	(layer "F.Cu")
+	(property "Reference" "REF**"
+		(at 0 -0.5 0)
+		(unlocked yes)
+		(layer "F.SilkS")
+		(uuid "3170c4a3-3e97-4954-9468-9036e0253ef7")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.1)
+			)
+		)
+	)
+	(property "Value" "m3-power-switch"
+		(at 0 1 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(uuid "8e755429-84a2-4ac8-a776-f5310ab67aba")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Footprint" ""
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "79b93c64-da0e-42e4-97d8-763b378c3332")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "4dc297d2-1b9c-427f-9eb0-c4db616ed4ac")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Description" ""
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "47860592-1c48-4c50-86c6-d0b2deda197a")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(attr smd)
+	(fp_text user "${REFERENCE}"
+		(at 0 2.5 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(uuid "d5d44ffd-cb4c-4795-adab-7b7147abec99")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(pad "" np_thru_hole circle
+		(at 0 0)
+		(size 4.2 4.2)
+		(drill 4.2)
+		(layers "*.Mask")
+		(uuid "4b4a8462-d384-4187-8797-74dcf0e48fa2")
+	)
+	(pad "1" smd circle
+		(at 0 0)
+		(size 6.5 6.5)
+		(layers "F.Cu" "F.Mask")
+		(uuid "0b4d6946-ae09-4b0b-ad6d-0cbed0fedd7e")
+	)
+	(pad "2" smd circle
+		(at 0 0)
+		(size 6.5 6.5)
+		(layers "B.Cu" "B.Mask")
+		(uuid "c3dd76f9-b561-4e95-92d2-66000cb8ee14")
+	)
+)
