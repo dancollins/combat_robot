@@ -1,0 +1,9 @@
+# Block out everything in this Zephyr workspace, as it's managed by west
+*
+!*/
+
+!/.west/config
+!.gitignore
+
+# Whitelist the firmware itself!
+!firmware/**
