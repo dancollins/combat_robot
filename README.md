@@ -20,4 +20,4 @@ Now you can run a few commands to get more dependancies:
 There's no actual firmware or board yet - so in the mean time here's a generic
 build for the included minimal sample.
 
-    west build --pristine --board nucleo_l432kc firmware
+    west build --pristine --board nucleo_l412rb_p firmware
