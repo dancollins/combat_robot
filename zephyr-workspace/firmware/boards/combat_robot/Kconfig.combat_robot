@@ -1,0 +1,4 @@
+# Copyright (c) 2024 Dan Collins
+
+config BOARD_COMBAT_ROBOT
+	select SOC_STM32L412XX

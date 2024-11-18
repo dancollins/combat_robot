@@ -1,0 +1,6 @@
+board:
+  name: combat_robot
+  full_name: Combat Robot
+  vendor: dancollins
+  socs:
+    - name: stm32l412xx

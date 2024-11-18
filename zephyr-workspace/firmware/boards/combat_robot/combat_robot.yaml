@@ -1,0 +1,17 @@
+identifier: combat_robot
+name: Dan Collins' Combat Robot
+type: mcu
+arch: arm
+toolchain:
+  - zephyr
+  - gnuarmemb
+  - xtools
+ram: 40
+flash: 128
+supported:
+  - nvs
+  - pwm
+  - spi
+  - i2c
+  - adc
+vendor: dancollins

@@ -1,0 +1,167 @@
+/*
+ * Copyright (c) 2024 Dan Collins
+ */
+
+/dts-v1/;
+#include <st/l4/stm32l412XB.dtsi>
+#include <st/l4/stm32l412cbtx-pinctrl.dtsi>
+#include <zephyr/dt-bindings/input/input-event-codes.h>
+
+/ {
+	model = "Combat Robot";
+	compatible = "dancollins,combat_robot";
+
+	chosen {
+		zephyr,console = &cdc_acm_uart0;
+		zephyr,shell-uart = &cdc_acm_uart0;
+		zephyr,sram = &sram0;
+		zephyr,flash = &flash0;
+
+		combat,rf-uart = &usart1;
+		combat,esc-uart = &usart2;
+		combat,i2c = &i2c1;
+		combat,spi_flash = &w25q32jvzp;
+	};
+
+	pwmleds {
+		compatible = "pwm-leds";
+		red_led_pwm: led_pwm_0 {
+			pwms = <&pwm1 0 PWM_MSEC(20) PWM_POLARITY_INVERTED>;
+			label = "Red PWM LED";
+		};
+
+		green_led_pwm: led_pwm_1 {
+			pwms = <&pwm1 1 PWM_MSEC(20) PWM_POLARITY_INVERTED>;
+			label = "Green PWM LED";
+		};
+
+		blue_led_pwm: led_pwm_2 {
+			pwms = <&pwm1 2 PWM_MSEC(20) PWM_POLARITY_INVERTED>;
+			label = "Blue PWM LED";
+		};
+	};
+
+	gpio_keys {
+		compatible = "gpio-keys";
+		user_button: button {
+			label = "User";
+			gpios = <&gpioc 15 GPIO_ACTIVE_LOW>;
+			zephyr,code = <INPUT_KEY_0>;
+		};
+	};
+};
+
+&usart1 {
+	status = "okay";
+
+	pinctrl-0 = <&usart1_tx_pb6 &usart1_rx_pb7>;
+	pinctrl-names = "default";
+};
+
+&usart2 {
+	status = "okay";
+
+	pinctrl-0 = <&usart2_tx_pa2 &usart2_rx_pa3>;
+	pinctrl-names = "default";
+};
+
+&spi1 {
+	status = "okay";
+
+	cs-gpios = <&gpiob 0 GPIO_ACTIVE_LOW>;
+
+	pinctrl-0 = <&spi1_miso_pa6 &spi1_mosi_pa7 &spi1_sck_pa5>;
+	pinctrl-names = "default";
+
+	w25q32jvzp: w25q32jvzp@0 {
+		compatible = "jedec,spi-nor";
+		status = "okay";
+		reg = < 0 >;
+		spi-max-frequency = < DT_FREQ_M(50) >;
+		size = < 0x2000000 >; /* 32 Mbit */
+		jedec-id = [ ef 40 16 ];
+
+		has-dpd;
+		t-enter-dpd = < 3000 >;
+		t-exit-dpd = < 30000 >;
+	};
+};
+
+&i2c1 {
+	status = "okay";
+
+	pinctrl-0 = <&i2c1_sda_pb9 &i2c1_scl_pb8>;
+	pinctrl-names = "default";
+};
+
+&timers1 {
+	status = "okay";
+
+	/* RGB LEDs. */
+	pwm1: pwm {
+		status = "okay";
+		pinctrl-0 = <&tim1_ch1_pa8 &tim1_ch2_pa9 &tim1_ch3_pa10>;
+		pinctrl-names = "default";
+	};
+};
+
+&timers2 {
+	status = "okay";
+
+	/* DC motor drivers. */
+	pwm2: pwm {
+		status = "okay";
+		pinctrl-0 = <&tim2_ch1_pa15 &tim2_ch2_pb3 &tim2_ch3_pb10 &tim2_ch4_pb11>;
+		pinctrl-names = "default";
+	};
+};
+
+&timers15 {
+	status = "okay";
+
+	/* ESC. */
+	pwm15: pwm {
+		status = "okay";
+		pinctrl-0 = <&tim15_ch1_pb14>;
+		pinctrl-names = "default";
+	};
+};
+
+zephyr_udc0: &usb {
+	pinctrl-0 = <&usb_dm_pa11 &usb_dp_pa12>;
+	pinctrl-names = "default";
+	status = "okay";
+
+	cdc_acm_uart0: cdc_acm_uart0 {
+		compatible = "zephyr,cdc-acm-uart";
+	};
+};
+
+&clk_lsi {
+	status = "okay";
+};
+
+&clk_hsi {
+	status = "okay";
+};
+
+&pll {
+	div-m = <1>;
+	mul-n = <10>;
+	div-q = <2>;
+	div-r = <2>;
+	clocks = <&clk_hsi>;
+	status = "okay";
+};
+
+&rcc {
+	clocks = <&pll>;
+	clock-frequency = <DT_FREQ_M(80)>;
+	ahb-prescaler = <1>;
+	apb1-prescaler = <1>;
+	apb2-prescaler = <1>;
+};
+
+&vref {
+	status = "okay";
+};
