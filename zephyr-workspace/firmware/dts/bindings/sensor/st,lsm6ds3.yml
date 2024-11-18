@@ -1,0 +1,6 @@
+description: |
+  LSM6DS3TR-C iNEMO 6DoF inertial measurement unit.
+
+compatible: "st,lsm6ds3"
+
+include: [sensor-device.yaml, i2c-device.yaml]

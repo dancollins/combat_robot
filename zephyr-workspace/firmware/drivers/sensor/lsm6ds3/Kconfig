@@ -1,0 +1,6 @@
+menuconfig SENSOR_LSM6DS3
+    bool "ST LSM6DS3 accelerometer and gyro sensor driver"
+    default y
+    depends on DT_HAS_ST_LSM6DS3_ENABLED && I2C
+    help
+      Enable support for ST's LSM6DS3 iNEMO 6DoF inertial measurement unit.

@@ -4,3 +4,5 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(combat_robot)
 
 target_sources(app PRIVATE src/main.c)
+
+add_subdirectory(drivers/sensor)

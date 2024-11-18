@@ -19,8 +19,9 @@
 
 		combat,rf-uart = &usart1;
 		combat,esc-uart = &usart2;
-		combat,i2c = &i2c1;
 		combat,spi_flash = &w25q32jvzp;
+
+		combat,imu = &lsm6ds3;
 	};
 
 	pwmleds {
@@ -92,6 +93,11 @@
 
 	pinctrl-0 = <&i2c1_sda_pb9 &i2c1_scl_pb8>;
 	pinctrl-names = "default";
+
+	lsm6ds3: lsm6ds3@6a {
+		compatible = "st,lsm6ds3";
+		reg = <0x6a>;
+	};
 };
 
 &timers1 {
