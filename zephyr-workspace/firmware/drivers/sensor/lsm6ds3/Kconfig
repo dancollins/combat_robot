@@ -1,6 +1,14 @@
+config USE_STDC_LSM6DS3TR_C
+  bool
+
 menuconfig SENSOR_LSM6DS3
-    bool "ST LSM6DS3 accelerometer and gyro sensor driver"
-    default y
-    depends on DT_HAS_ST_LSM6DS3_ENABLED && I2C
-    help
-      Enable support for ST's LSM6DS3 iNEMO 6DoF inertial measurement unit.
+  bool "ST LSM6DS3 accelerometer and gyro sensor driver"
+  default y
+  depends on DT_HAS_ST_LSM6DS3_ENABLED
+  depends on ZEPHYR_HAL_ST_MODULE
+  select I2C if $(dt_compat_on_bus,$(DT_COMPAT_ST_LSM6DS3),i2c)
+  select SPI if $(dt_compat_on_bus,$(DT_COMPAT_ST_LSM6DS3),spi)
+  select HAS_STMEMSC
+  select USE_STDC_LSM6DS3TR_C
+  help
+    Enable support for ST's LSM6DS3 iNEMO 6DoF inertial measurement unit.
