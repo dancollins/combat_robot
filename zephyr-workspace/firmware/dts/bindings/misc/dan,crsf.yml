@@ -1,0 +1,5 @@
+description: Dan's Crossfire driver - compatible with ExpressLRS
+
+compatible: "dan,csrf"
+
+include: base.yaml

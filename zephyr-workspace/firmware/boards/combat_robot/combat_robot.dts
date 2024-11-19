@@ -17,7 +17,6 @@
 		zephyr,sram = &sram0;
 		zephyr,flash = &flash0;
 
-		combat,rf-uart = &usart1;
 		combat,esc-uart = &usart2;
 	};
 
@@ -51,6 +50,12 @@
 
 &usart1 {
 	status = "okay";
+
+	current-speed = <416666>;
+
+	elrs_radio: elrs_radio {
+		compatible = "dan,csrf";
+	};
 
 	pinctrl-0 = <&usart1_tx_pb6 &usart1_rx_pb7>;
 	pinctrl-names = "default";

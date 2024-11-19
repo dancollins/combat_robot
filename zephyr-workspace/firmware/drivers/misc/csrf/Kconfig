@@ -1,0 +1,38 @@
+menuconfig DAN_CSRF
+    bool "Opito HUB75 Controller Driver"
+    default y
+    depends on DT_HAS_DAN_CSRF_ENABLED
+    select SERIAL
+    select RING_BUFFER
+    help
+        Enable Dan's CSRF driver.
+
+if DAN_CSRF
+
+config DAN_CSRF_INIT_PRIORITY
+    int "CSRF init priority"
+    default 95
+    help
+        CSRF initialisation priority.
+
+config DAN_CSRF_RX_BUFFER_SIZE
+    int "CSRF RX buffer size"
+    default 256
+    help
+        CSRF RX buffer for octets from radio before processing.
+
+config DAN_CSRF_THREAD_STACK_SIZE
+    int "CSRF thread stack size"
+    default 1024
+    help
+        CSRF thread stack size.
+
+config DAN_CSRF_THREAD_PRIORITY
+  int "Thread priority for CSRF processing thread."
+  default 10
+
+module = DAN_CSRF
+module-str = dan_csrf
+source "subsys/logging/Kconfig.template.log_config"
+
+endif

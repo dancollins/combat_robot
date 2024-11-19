@@ -5,4 +5,7 @@ project(combat_robot)
 
 target_sources(app PRIVATE src/main.c)
 
+add_subdirectory(drivers/misc)
 add_subdirectory(drivers/sensor)
+
+include_directories(include)
