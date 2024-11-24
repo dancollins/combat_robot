@@ -38,6 +38,8 @@ struct lsm6ds3_data
     uint16_t gyro[3];
 };
 
+static const int LSM6DS3_ID = 0x69;
+
 static int lsm6ds3_init(const struct device *dev)
 {
     const struct lsm6ds3_config *cfg = dev->config;
@@ -52,7 +54,8 @@ static int lsm6ds3_init(const struct device *dev)
 
     LOG_INF("chip id 0x%x", chip_id);
 
-    if (chip_id != LSM6DS3TR_C_ID)
+    /* This driver supports LSM6DS3 - which is different to the LSM6DS3TR-C */
+    if (chip_id != LSM6DS3_ID)
     {
         LOG_DBG("Invalid chip id 0x%x", chip_id);
         return -EIO;

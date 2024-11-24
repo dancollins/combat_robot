@@ -13,35 +13,34 @@ static const struct device *rgb = DEVICE_DT_GET(DT_PATH(rgb_led));
 
 static int test_rgb(const struct device *rgb_dev)
 {
-    int brightness = 255;
-    k_timeout_t delay = K_MSEC(250);
+    const uint8_t colours[9][3] = {
+        {100, 0, 0},
+        {100, 50, 0},
+        {100, 100, 0},
+        {0, 100, 0},
+        {0, 0, 100},
+        {50, 0, 100},
+        {100, 0, 80},
+        {100, 100, 100},
+        {0, 0, 0}};
+
+    k_timeout_t delay = K_MSEC(500);
 
     printk("Testing RGB device %s\n", rgb_dev->name);
 
-    printk("Setting RGB to red...\n");
-    led_set_brightness(rgb_dev, 0, brightness);
-    led_set_brightness(rgb_dev, 1, 0);
-    led_set_brightness(rgb_dev, 2, 0);
+    if (!device_is_ready(rgb_dev))
+    {
+        printk("RGB device not ready\n");
+        return -1;
+    }
 
-    k_sleep(delay);
-
-    printk("Setting RGB to green...\n");
-    led_set_brightness(rgb_dev, 0, 0);
-    led_set_brightness(rgb_dev, 1, brightness);
-    led_set_brightness(rgb_dev, 2, 0);
-
-    k_sleep(delay);
-
-    printk("Setting RGB to blue...\n");
-    led_set_brightness(rgb_dev, 0, 0);
-    led_set_brightness(rgb_dev, 1, 0);
-    led_set_brightness(rgb_dev, 2, brightness);
-
-    k_sleep(delay);
-
-    led_set_brightness(rgb_dev, 0, 0);
-    led_set_brightness(rgb_dev, 1, 0);
-    led_set_brightness(rgb_dev, 2, 0);
+    for (unsigned i = 0; i < ARRAY_SIZE(colours); i++)
+    {
+        led_set_brightness(rgb_dev, 0, colours[i][0]);
+        led_set_brightness(rgb_dev, 1, colours[i][1]);
+        led_set_brightness(rgb_dev, 2, colours[i][2]);
+        k_sleep(delay);
+    }
 
     return 0;
 }
@@ -53,6 +52,12 @@ static int test_flash(const struct device *flash_dev)
     uint8_t buf[sizeof(expected)];
 
     printk("Testing flash device %s\n", flash_dev->name);
+
+    if (!device_is_ready(flash_dev))
+    {
+        printk("Flash device not ready\n");
+        return -1;
+    }
 
     printk("Erasing flash...\n");
     rc = flash_erase(flash_dev, 0, 4096);
@@ -96,14 +101,26 @@ static int test_flash(const struct device *flash_dev)
 
 int main(void)
 {
-    __ASSERT(device_is_ready(elrs_radio), "ELRS radio device not ready\n");
-    __ASSERT(device_is_ready(esc_uart_dev), "ESC UART device not ready\n");
-    __ASSERT(device_is_ready(spi_flash), "SPI flash device not ready\n");
-    __ASSERT(device_is_ready(imu), "IMU not ready\n");
+
+    if (!device_is_ready(elrs_radio))
+    {
+        printk("ELRS radio device not ready\n");
+    }
+
+    if (!device_is_ready(esc_uart_dev))
+    {
+        printk("ESC UART device not ready\n");
+    }
+
+    if (!device_is_ready(imu))
+    {
+        printk("IMU not ready\n");
+    }
+
+    printk("Hello, world!\n");
 
     test_rgb(rgb);
     test_flash(spi_flash);
 
-    printk("Hello, world!\n");
     return 0;
 }
