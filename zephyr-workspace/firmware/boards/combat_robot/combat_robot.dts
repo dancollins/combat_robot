@@ -96,7 +96,7 @@
 		compatible = "gpio-leds";
 
 		dc_dir3: dc_dir3 {
-			gpios = <&gpiob 12 GPIO_ACTIVE_HIGH>;
+			gpios = <&gpiob 12 GPIO_ACTIVE_LOW>;
 			label = "DC Motor 3 direction";
 		};
 	};
@@ -105,7 +105,7 @@
 		compatible = "gpio-leds";
 
 		dc_dir4: dc_dir4 {
-			gpios = <&gpiob 13 GPIO_ACTIVE_HIGH>;
+			gpios = <&gpiob 13 GPIO_ACTIVE_LOW>;
 			label = "DC Motor 4 direction";
 		};
 	};
