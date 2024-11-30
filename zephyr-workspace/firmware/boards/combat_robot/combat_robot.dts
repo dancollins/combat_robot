@@ -148,6 +148,8 @@
 
 	elrs_radio: elrs_radio {
 		compatible = "dan,csrf";
+
+		reset-gpios = <&gpioc 13 GPIO_ACTIVE_LOW>;
 	};
 };
 

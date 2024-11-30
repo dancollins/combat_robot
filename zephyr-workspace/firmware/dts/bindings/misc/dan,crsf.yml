@@ -3,3 +3,8 @@ description: Dan's Crossfire driver - compatible with ExpressLRS
 compatible: "dan,csrf"
 
 include: base.yaml
+
+properties:
+  reset-gpios:
+    description: GPIO pin to reset the receiver
+    type: phandle-array

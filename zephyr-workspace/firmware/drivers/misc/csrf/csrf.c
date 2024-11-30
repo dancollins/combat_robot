@@ -1,4 +1,5 @@
 #include <zephyr/kernel.h>
+#include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/uart.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/byteorder.h>
@@ -21,11 +22,14 @@ enum rx_state
 struct csrf_config
 {
     const struct device *uart_dev;
+    const struct gpio_dt_spec reset_gpio;
 };
 
 struct csrf_data
 {
     const struct device *dev;
+
+    csrf_channel_callback_t channel_callback;
 
     struct k_thread thread;
     K_KERNEL_STACK_MEMBER(
@@ -95,7 +99,45 @@ static uint8_t csrf_crc8(const uint8_t *ptr, uint8_t len)
     return crc;
 }
 
-static void process_frame(struct csrf_data *data)
+static void handle_rx_frame(struct csrf_data *data)
+{
+    k_sleep(K_MSEC(1));
+
+    switch (data->rx.type)
+    {
+    case 0x16:
+    {
+        uint8_t *payload = data->rx.payload;
+        struct csrf_channel_data channels;
+
+        /* Each channel is 11 bits, so we need to unpack it all! */
+        for (int i = 0; i < 16; i++)
+        {
+            uint32_t byte_index = (i * 11) / 8;
+            uint32_t bit_offset = (i * 11) % 8;
+
+            uint16_t val = (payload[byte_index] >> bit_offset) |
+                           (payload[byte_index + 1] << (8 - bit_offset));
+
+            /* Special case when our value spans 3 octets. */
+            if (bit_offset > 5)
+                val |= payload[byte_index + 2] << (16 - bit_offset);
+
+            val &= 0x07ff;
+
+            channels.ch[i] = (int16_t)val;
+
+            if (data->channel_callback)
+                data->channel_callback(&channels);
+        }
+        break;
+    }
+    default:
+        break;
+    }
+}
+
+static void process_buffer(struct csrf_data *data)
 {
     uint32_t len;
     uint8_t buf[64];
@@ -111,7 +153,6 @@ static void process_frame(struct csrf_data *data)
         if (buf[0] != 0xc8)
             break;
 
-        LOG_INF("sync");
         data->rx.state = RX_STATE_GET_LEN;
         break;
 
@@ -128,22 +169,17 @@ static void process_frame(struct csrf_data *data)
 
         data->rx.len = buf[0];
         data->rx.state = RX_STATE_GET_TYPE;
-        LOG_INF("len=%u", data->rx.len);
         break;
 
     case RX_STATE_GET_TYPE:
         /* Wait until we have a complete frame worth. */
         len = ring_buf_peek(&data->rx.buf, buf, data->rx.len + 1);
         if (len != data->rx.len + 1)
-        {
-            LOG_INF(".");
             return;
-        }
 
         /* TODO make sure it's a valid type. */
         data->rx.type = buf[1];
         data->rx.state = RX_STATE_CHECK_CRC;
-        LOG_INF("type=%u", data->rx.type);
         break;
 
     case RX_STATE_CHECK_CRC:
@@ -159,15 +195,11 @@ static void process_frame(struct csrf_data *data)
             return;
         }
 
-        LOG_HEXDUMP_INF(buf, data->rx.len + 2, "frame");
-        LOG_HEXDUMP_INF(&buf[2], data->rx.len - 2, "payload");
-
         expected = csrf_crc8(&buf[1], data->rx.len - 1);
         received = buf[data->rx.len];
 
         if (expected != received)
         {
-            LOG_WRN("crc mismatch (exp=%02x, rx=%02x)", expected, received);
             data->rx.state = RX_STATE_IDLE;
             return;
         }
@@ -175,11 +207,8 @@ static void process_frame(struct csrf_data *data)
         /* We have a valid frame! */
         memcpy(data->rx.payload, &buf[2], data->rx.len - 2);
         ring_buf_get(&data->rx.buf, NULL, data->rx.len + 1);
-
-        LOG_INF("RX (type=%d)", data->rx.type);
-        LOG_HEXDUMP_INF(data->rx.payload, data->rx.len - 2, "");
-
         data->rx.state = RX_STATE_IDLE;
+        handle_rx_frame(data);
         break;
     }
 
@@ -206,8 +235,20 @@ static void csrf_thread(void *p1, void *p2, void *p3)
             continue;
 
         while (!ring_buf_is_empty(&data->rx.buf))
-            process_frame(data);
+            process_buffer(data);
     }
+}
+
+static int set_channel_callback(
+    const struct device *dev,
+    csrf_channel_callback_t callback)
+{
+    struct csrf_data *data = dev->data;
+
+    LOG_INF("Setting channel callback: %p", callback);
+    data->channel_callback = callback;
+
+    return 0;
 }
 
 static int csrf_init(const struct device *dev)
@@ -225,6 +266,12 @@ static int csrf_init(const struct device *dev)
     }
 
     data->dev = dev;
+
+    gpio_pin_configure_dt(&cfg->reset_gpio, GPIO_OUTPUT);
+
+    gpio_pin_set_dt(&cfg->reset_gpio, 1);
+    k_busy_wait(100);
+    gpio_pin_set_dt(&cfg->reset_gpio, 0);
 
     ring_buf_init(
         &data->rx.buf,
@@ -263,21 +310,24 @@ static int csrf_init(const struct device *dev)
     return 0;
 }
 
-struct csrf_driver_api csrf_api = {};
+struct csrf_driver_api csrf_api = {
+    .set_channel_callback = set_channel_callback,
+};
 
-#define CSRF_DEFINE(n)                                   \
-    static const struct csrf_config csrf_cfg_##n = {     \
-        .uart_dev = DEVICE_DT_GET(DT_INST_BUS(n)),       \
-    };                                                   \
-                                                         \
-    static struct csrf_data csrf_data_##n;               \
-                                                         \
-    DEVICE_DT_INST_DEFINE(n, csrf_init,                  \
-                          NULL,                          \
-                          &csrf_data_##n,                \
-                          &csrf_cfg_##n,                 \
-                          POST_KERNEL,                   \
-                          CONFIG_DAN_CSRF_INIT_PRIORITY, \
+#define CSRF_DEFINE(n)                                       \
+    static const struct csrf_config csrf_cfg_##n = {         \
+        .uart_dev = DEVICE_DT_GET(DT_INST_BUS(n)),           \
+        .reset_gpio = GPIO_DT_SPEC_INST_GET(n, reset_gpios), \
+    };                                                       \
+                                                             \
+    static struct csrf_data csrf_data_##n;                   \
+                                                             \
+    DEVICE_DT_INST_DEFINE(n, csrf_init,                      \
+                          NULL,                              \
+                          &csrf_data_##n,                    \
+                          &csrf_cfg_##n,                     \
+                          POST_KERNEL,                       \
+                          CONFIG_DAN_CSRF_INIT_PRIORITY,     \
                           &csrf_api);
 
 DT_INST_FOREACH_STATUS_OKAY(CSRF_DEFINE)

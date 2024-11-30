@@ -6,6 +6,8 @@
 #include <zephyr/drivers/pwm.h>
 #include <zephyr/drivers/uart.h>
 
+#include "drivers/misc/csrf.h"
+
 static const struct device *esc_uart = DEVICE_DT_GET(DT_CHOSEN(combat_esc_uart));
 
 static const struct device *elrs_radio = DEVICE_DT_GET(DT_NODELABEL(elrs_radio));
@@ -204,17 +206,17 @@ static int test_dc_motor(void)
     }
 
     gpio_pin_configure_dt(&dc_motor_sleep, GPIO_OUTPUT);
-    gpio_pin_set_dt(&dc_motor_sleep, 0);
+    gpio_pin_set_dt(&dc_motor_sleep, 1);
 
-    gpio_pin_configure_dt(&dc_motor_1_dir, GPIO_OUTPUT);
-    gpio_pin_configure_dt(&dc_motor_2_dir, GPIO_OUTPUT);
-    gpio_pin_configure_dt(&dc_motor_3_dir, GPIO_OUTPUT);
-    gpio_pin_configure_dt(&dc_motor_4_dir, GPIO_OUTPUT);
+    // gpio_pin_configure_dt(&dc_motor_1_dir, GPIO_OUTPUT);
+    // gpio_pin_configure_dt(&dc_motor_2_dir, GPIO_OUTPUT);
+    // gpio_pin_configure_dt(&dc_motor_3_dir, GPIO_OUTPUT);
+    // gpio_pin_configure_dt(&dc_motor_4_dir, GPIO_OUTPUT);
 
-    gpio_pin_set_dt(&dc_motor_1_dir, 0);
-    gpio_pin_set_dt(&dc_motor_2_dir, 0);
-    gpio_pin_set_dt(&dc_motor_3_dir, 0);
-    gpio_pin_set_dt(&dc_motor_4_dir, 0);
+    // gpio_pin_set_dt(&dc_motor_1_dir, 0);
+    // gpio_pin_set_dt(&dc_motor_2_dir, 0);
+    // gpio_pin_set_dt(&dc_motor_3_dir, 0);
+    // gpio_pin_set_dt(&dc_motor_4_dir, 0);
 
     // printk("Setting DC pulse width to %d ns\n", pulse_ns_a);
     // pwm_set_pulse_dt(&dc_motor_1, pulse_ns_a);
@@ -249,13 +251,29 @@ static int test_dc_motor(void)
     // pwm_set_pulse_dt(&dc_motor_4, pulse_ns_b);
     // k_sleep(K_SECONDS(2));
 
-    printk("Setting DC pulse width to %d ns\n", pulse_ns_a);
-    pwm_set_pulse_dt(&dc_motor_1, pulse_ns_a);
-    pwm_set_pulse_dt(&dc_motor_2, pulse_ns_a);
-    pwm_set_pulse_dt(&dc_motor_3, pulse_ns_a);
-    pwm_set_pulse_dt(&dc_motor_4, pulse_ns_a);
+    // printk("Setting DC pulse width to %d ns\n", pulse_ns_a);
+    // pwm_set_pulse_dt(&dc_motor_1, pulse_ns_a);
+    // pwm_set_pulse_dt(&dc_motor_2, pulse_ns_a);
+    // pwm_set_pulse_dt(&dc_motor_3, pulse_ns_a);
+    // pwm_set_pulse_dt(&dc_motor_4, pulse_ns_a);
 
     return 0;
+}
+
+static void csrf_channel_callback(const struct csrf_channel_data *channels)
+{
+    static int skip = 0;
+
+    if (skip++ % 1000 != 0)
+    {
+        return;
+    }
+
+    for (int i = 0; i < 16; i++)
+    {
+        printk(" %u", channels->ch[i]);
+    }
+    printk("\n");
 }
 
 int main(void)
@@ -272,10 +290,17 @@ int main(void)
 
     printk("Hello, world!\n");
 
+    csrf_set_channel_callback(elrs_radio, csrf_channel_callback);
+
     // test_rgb(rgb);
     // test_flash(spi_flash);
     test_esc();
     test_dc_motor();
+
+    while (1)
+    {
+        k_sleep(K_SECONDS(1));
+    }
 
     return 0;
 }
