@@ -5,7 +5,9 @@
 /dts-v1/;
 #include <st/l4/stm32l412XB.dtsi>
 #include <st/l4/stm32l412cbtx-pinctrl.dtsi>
+
 #include <zephyr/dt-bindings/input/input-event-codes.h>
+#include <zephyr/dt-bindings/pwm/pwm.h>
 
 / {
 	model = "Combat Robot";
@@ -17,7 +19,7 @@
 		zephyr,sram = &sram0;
 		zephyr,flash = &flash0;
 
-		combat,esc-uart = &usart2;
+		combat,esc-uart = &usart1;
 	};
 
 	rgb-led {
@@ -39,6 +41,84 @@
 		};
 	};
 
+	esc {
+		compatible = "pwm-leds";
+
+		esc0: esc_0 {
+			pwms = <&pwm15 1 PWM_MSEC(20) PWM_POLARITY_NORMAL>;
+			label = "Weapon ESC";
+		};
+	};
+
+	dc-motors {
+		compatible = "pwm-leds";
+
+		dc1: dc1 {
+			pwms = <&pwm2 1 PWM_MSEC(20) PWM_POLARITY_NORMAL>;
+			label = "DC Motor 1";
+		};
+
+		dc2: dc2 {
+			pwms = <&pwm2 2 PWM_MSEC(20) PWM_POLARITY_NORMAL>;
+			label = "DC Motor 2";
+		};
+
+		dc3: dc3 {
+			pwms = <&pwm2 3 PWM_MSEC(20) PWM_POLARITY_NORMAL>;
+			label = "DC Motor 3";
+		};
+
+		dc4: dc4 {
+			pwms = <&pwm2 4 PWM_MSEC(20) PWM_POLARITY_NORMAL>;
+			label = "DC Motor 4";
+		};
+	};
+
+	dc-dir1 {
+		compatible = "gpio-leds";
+
+		dc_dir1: dc_dir1 {
+			gpios = <&gpiob 1 GPIO_ACTIVE_HIGH>;
+			label = "DC Motor 1 direction";
+		};
+	};
+
+	dc-dir2 {
+		compatible = "gpio-leds";
+
+		dc_dir2: dc_dir2 {
+			gpios = <&gpiob 2 GPIO_ACTIVE_HIGH>;
+			label = "DC Motor 2 direction";
+		};
+	};
+
+	dc-dir3 {
+		compatible = "gpio-leds";
+
+		dc_dir3: dc_dir3 {
+			gpios = <&gpiob 12 GPIO_ACTIVE_HIGH>;
+			label = "DC Motor 3 direction";
+		};
+	};
+
+	dc-dir4 {
+		compatible = "gpio-leds";
+
+		dc_dir4: dc_dir4 {
+			gpios = <&gpiob 13 GPIO_ACTIVE_HIGH>;
+			label = "DC Motor 4 direction";
+		};
+	};
+
+	dc-sleep {
+		compatible = "gpio-leds";
+
+		dc_sleep: sleep {
+			gpios = <&gpiob 15 GPIO_ACTIVE_LOW>;
+			label = "DC Motor sleep";
+		};
+	};
+
 	gpio_keys {
 		compatible = "gpio-keys";
 		user_button: button {
@@ -52,11 +132,7 @@
 &usart1 {
 	status = "okay";
 
-	current-speed = <416666>;
-
-	elrs_radio: elrs_radio {
-		compatible = "dan,csrf";
-	};
+	current-speed = <115200>;
 
 	pinctrl-0 = <&usart1_tx_pb6 &usart1_rx_pb7>;
 	pinctrl-names = "default";
@@ -65,8 +141,14 @@
 &usart2 {
 	status = "okay";
 
+	current-speed = <420000>;
+
 	pinctrl-0 = <&usart2_tx_pa2 &usart2_rx_pa3>;
 	pinctrl-names = "default";
+
+	elrs_radio: elrs_radio {
+		compatible = "dan,csrf";
+	};
 };
 
 &spi1 {
@@ -131,7 +213,6 @@
 	status = "okay";
 	st,prescaler = <10000>;
 
-	/* ESC. */
 	pwm15: pwm {
 		status = "okay";
 		pinctrl-0 = <&tim15_ch1_pb14>;

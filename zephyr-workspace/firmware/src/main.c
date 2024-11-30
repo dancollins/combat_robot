@@ -1,15 +1,31 @@
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/flash.h>
+#include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/led.h>
+#include <zephyr/drivers/pwm.h>
+#include <zephyr/drivers/uart.h>
 
-/* Placeholders to make sure our device tree is working. */
+static const struct device *esc_uart = DEVICE_DT_GET(DT_CHOSEN(combat_esc_uart));
 
 static const struct device *elrs_radio = DEVICE_DT_GET(DT_NODELABEL(elrs_radio));
-static const struct device *esc_uart_dev = DEVICE_DT_GET(DT_CHOSEN(combat_esc_uart));
 static const struct device *spi_flash = DEVICE_DT_GET(DT_NODELABEL(spi_flash));
 static const struct device *imu = DEVICE_DT_GET(DT_NODELABEL(accel_gyro));
 static const struct device *rgb = DEVICE_DT_GET(DT_PATH(rgb_led));
+
+static const struct pwm_dt_spec esc_pwm = PWM_DT_SPEC_GET(DT_NODELABEL(esc0));
+
+static const struct pwm_dt_spec dc_motor_1 = PWM_DT_SPEC_GET(DT_NODELABEL(dc1));
+static const struct pwm_dt_spec dc_motor_2 = PWM_DT_SPEC_GET(DT_NODELABEL(dc2));
+static const struct pwm_dt_spec dc_motor_3 = PWM_DT_SPEC_GET(DT_NODELABEL(dc3));
+static const struct pwm_dt_spec dc_motor_4 = PWM_DT_SPEC_GET(DT_NODELABEL(dc4));
+
+static const struct gpio_dt_spec dc_motor_1_dir = GPIO_DT_SPEC_GET(DT_NODELABEL(dc_dir1), gpios);
+static const struct gpio_dt_spec dc_motor_2_dir = GPIO_DT_SPEC_GET(DT_NODELABEL(dc_dir2), gpios);
+static const struct gpio_dt_spec dc_motor_3_dir = GPIO_DT_SPEC_GET(DT_NODELABEL(dc_dir3), gpios);
+static const struct gpio_dt_spec dc_motor_4_dir = GPIO_DT_SPEC_GET(DT_NODELABEL(dc_dir4), gpios);
+
+static const struct gpio_dt_spec dc_motor_sleep = GPIO_DT_SPEC_GET(DT_NODELABEL(dc_sleep), gpios);
 
 static int test_rgb(const struct device *rgb_dev)
 {
@@ -99,17 +115,154 @@ static int test_flash(const struct device *flash_dev)
     return 0;
 }
 
+static int test_esc(void)
+{
+    uint32_t pulse_ns_a = 1000 * NSEC_PER_USEC;
+    uint32_t pulse_ns_b = 1200 * NSEC_PER_USEC;
+
+    printk("Testing ESC PWM device %s\n", esc_pwm.dev->name);
+
+    if (!pwm_is_ready_dt(&esc_pwm))
+    {
+        printk("Error: PWM device %s is not ready\n", esc_pwm.dev->name);
+        return -ENODEV;
+    }
+
+    // printk("Setting ESC pulse width to %d ns\n", pulse_ns_a);
+    // pwm_set_pulse_dt(&esc_pwm, pulse_ns_a);
+    // k_sleep(K_SECONDS(3));
+
+    // printk("Setting ESC pulse width to %d ns\n", pulse_ns_b);
+    // pwm_set_pulse_dt(&esc_pwm, pulse_ns_b);
+    // k_sleep(K_SECONDS(3));
+
+    printk("Setting ESC pulse width to %d ns\n", pulse_ns_a);
+    pwm_set_pulse_dt(&esc_pwm, pulse_ns_a);
+
+    return 0;
+}
+
+static int test_dc_motor(void)
+{
+    uint32_t pulse_ns_a = 0;
+    uint32_t pulse_ns_b = 10000 * NSEC_PER_USEC;
+
+    printk("Testing DC motor PWM device %s\n", dc_motor_3.dev->name);
+
+    if (!pwm_is_ready_dt(&dc_motor_1))
+    {
+        printk("Error: PWM device %s is not ready\n", dc_motor_1.dev->name);
+        return -ENODEV;
+    }
+
+    if (!pwm_is_ready_dt(&dc_motor_2))
+    {
+        printk("Error: PWM device %s is not ready\n", dc_motor_2.dev->name);
+        return -ENODEV;
+    }
+
+    if (!pwm_is_ready_dt(&dc_motor_3))
+    {
+        printk("Error: PWM device %s is not ready\n", dc_motor_3.dev->name);
+        return -ENODEV;
+    }
+
+    if (!pwm_is_ready_dt(&dc_motor_4))
+    {
+        printk("Error: PWM device %s is not ready\n", dc_motor_4.dev->name);
+        return -ENODEV;
+    }
+
+    if (!gpio_is_ready_dt(&dc_motor_1_dir))
+    {
+        printk("Error: GPIO device %s is not ready\n", dc_motor_1_dir.port->name);
+        return -ENODEV;
+    }
+
+    if (!gpio_is_ready_dt(&dc_motor_2_dir))
+    {
+        printk("Error: GPIO device %s is not ready\n", dc_motor_2_dir.port->name);
+        return -ENODEV;
+    }
+
+    if (!gpio_is_ready_dt(&dc_motor_3_dir))
+    {
+        printk("Error: GPIO device %s is not ready\n", dc_motor_3_dir.port->name);
+        return -ENODEV;
+    }
+
+    if (!gpio_is_ready_dt(&dc_motor_4_dir))
+    {
+        printk("Error: GPIO device %s is not ready\n", dc_motor_4_dir.port->name);
+        return -ENODEV;
+    }
+
+    if (!gpio_is_ready_dt(&dc_motor_sleep))
+    {
+        printk("Error: GPIO device %s is not ready\n", dc_motor_sleep.port->name);
+        return -ENODEV;
+    }
+
+    gpio_pin_configure_dt(&dc_motor_sleep, GPIO_OUTPUT);
+    gpio_pin_set_dt(&dc_motor_sleep, 0);
+
+    gpio_pin_configure_dt(&dc_motor_1_dir, GPIO_OUTPUT);
+    gpio_pin_configure_dt(&dc_motor_2_dir, GPIO_OUTPUT);
+    gpio_pin_configure_dt(&dc_motor_3_dir, GPIO_OUTPUT);
+    gpio_pin_configure_dt(&dc_motor_4_dir, GPIO_OUTPUT);
+
+    gpio_pin_set_dt(&dc_motor_1_dir, 0);
+    gpio_pin_set_dt(&dc_motor_2_dir, 0);
+    gpio_pin_set_dt(&dc_motor_3_dir, 0);
+    gpio_pin_set_dt(&dc_motor_4_dir, 0);
+
+    // printk("Setting DC pulse width to %d ns\n", pulse_ns_a);
+    // pwm_set_pulse_dt(&dc_motor_1, pulse_ns_a);
+    // pwm_set_pulse_dt(&dc_motor_2, pulse_ns_a);
+    // pwm_set_pulse_dt(&dc_motor_3, pulse_ns_a);
+    // pwm_set_pulse_dt(&dc_motor_4, pulse_ns_a);
+    // k_sleep(K_SECONDS(1));
+
+    // printk("Setting DC pulse width to %d ns\n", pulse_ns_b);
+    // pwm_set_pulse_dt(&dc_motor_1, pulse_ns_b);
+    // pwm_set_pulse_dt(&dc_motor_2, pulse_ns_b);
+    // pwm_set_pulse_dt(&dc_motor_3, pulse_ns_b);
+    // pwm_set_pulse_dt(&dc_motor_4, pulse_ns_b);
+    // k_sleep(K_SECONDS(2));
+
+    // printk("Setting DC pulse width to %d ns\n", pulse_ns_a);
+    // pwm_set_pulse_dt(&dc_motor_1, pulse_ns_a);
+    // pwm_set_pulse_dt(&dc_motor_2, pulse_ns_a);
+    // pwm_set_pulse_dt(&dc_motor_3, pulse_ns_a);
+    // pwm_set_pulse_dt(&dc_motor_4, pulse_ns_a);
+    // k_sleep(K_SECONDS(1));
+
+    // gpio_pin_set_dt(&dc_motor_1_dir, 1);
+    // gpio_pin_set_dt(&dc_motor_2_dir, 1);
+    // gpio_pin_set_dt(&dc_motor_3_dir, 1);
+    // gpio_pin_set_dt(&dc_motor_4_dir, 1);
+
+    // printk("Setting DC pulse width to %d ns\n", pulse_ns_b);
+    // pwm_set_pulse_dt(&dc_motor_1, pulse_ns_b);
+    // pwm_set_pulse_dt(&dc_motor_2, pulse_ns_b);
+    // pwm_set_pulse_dt(&dc_motor_3, pulse_ns_b);
+    // pwm_set_pulse_dt(&dc_motor_4, pulse_ns_b);
+    // k_sleep(K_SECONDS(2));
+
+    printk("Setting DC pulse width to %d ns\n", pulse_ns_a);
+    pwm_set_pulse_dt(&dc_motor_1, pulse_ns_a);
+    pwm_set_pulse_dt(&dc_motor_2, pulse_ns_a);
+    pwm_set_pulse_dt(&dc_motor_3, pulse_ns_a);
+    pwm_set_pulse_dt(&dc_motor_4, pulse_ns_a);
+
+    return 0;
+}
+
 int main(void)
 {
-
     if (!device_is_ready(elrs_radio))
     {
         printk("ELRS radio device not ready\n");
-    }
-
-    if (!device_is_ready(esc_uart_dev))
-    {
-        printk("ESC UART device not ready\n");
     }
 
     if (!device_is_ready(imu))
@@ -119,8 +272,10 @@ int main(void)
 
     printk("Hello, world!\n");
 
-    test_rgb(rgb);
-    test_flash(spi_flash);
+    // test_rgb(rgb);
+    // test_flash(spi_flash);
+    test_esc();
+    test_dc_motor();
 
     return 0;
 }
