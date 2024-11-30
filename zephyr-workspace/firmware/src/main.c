@@ -208,15 +208,15 @@ static int test_dc_motor(void)
     gpio_pin_configure_dt(&dc_motor_sleep, GPIO_OUTPUT);
     gpio_pin_set_dt(&dc_motor_sleep, 1);
 
-    // gpio_pin_configure_dt(&dc_motor_1_dir, GPIO_OUTPUT);
-    // gpio_pin_configure_dt(&dc_motor_2_dir, GPIO_OUTPUT);
-    // gpio_pin_configure_dt(&dc_motor_3_dir, GPIO_OUTPUT);
-    // gpio_pin_configure_dt(&dc_motor_4_dir, GPIO_OUTPUT);
+    gpio_pin_configure_dt(&dc_motor_1_dir, GPIO_OUTPUT);
+    gpio_pin_configure_dt(&dc_motor_2_dir, GPIO_OUTPUT);
+    gpio_pin_configure_dt(&dc_motor_3_dir, GPIO_OUTPUT);
+    gpio_pin_configure_dt(&dc_motor_4_dir, GPIO_OUTPUT);
 
-    // gpio_pin_set_dt(&dc_motor_1_dir, 0);
-    // gpio_pin_set_dt(&dc_motor_2_dir, 0);
-    // gpio_pin_set_dt(&dc_motor_3_dir, 0);
-    // gpio_pin_set_dt(&dc_motor_4_dir, 0);
+    gpio_pin_set_dt(&dc_motor_1_dir, 0);
+    gpio_pin_set_dt(&dc_motor_2_dir, 0);
+    gpio_pin_set_dt(&dc_motor_3_dir, 0);
+    gpio_pin_set_dt(&dc_motor_4_dir, 0);
 
     // printk("Setting DC pulse width to %d ns\n", pulse_ns_a);
     // pwm_set_pulse_dt(&dc_motor_1, pulse_ns_a);
@@ -262,18 +262,62 @@ static int test_dc_motor(void)
 
 static void csrf_channel_callback(const struct csrf_channel_data *channels)
 {
-    static int skip = 0;
+    bool red_on = channels->ch[7] > 1000;
+    if (red_on)
+        led_set_brightness(rgb, 0, 100);
+    else
+        led_set_brightness(rgb, 0, 0);
 
-    if (skip++ % 1000 != 0)
+    /* Channel range is 0-2048, motor speed is 0-20000 us */
+    uint32_t dc0_speed = channels->ch[2] * 10;
+    if (dc0_speed > 20000)
+        dc0_speed = 20000;
+    else if (dc0_speed < 2000)
+        dc0_speed = 0;
+
+    if (dc0_speed > 0)
     {
-        return;
+        gpio_pin_set_dt(&dc_motor_sleep, 0);
+        gpio_pin_set_dt(&dc_motor_1_dir, 0);
+        pwm_set_pulse_dt(&dc_motor_1, dc0_speed * NSEC_PER_USEC);
+    }
+    else
+    {
+        pwm_set_pulse_dt(&dc_motor_1, 0);
+        gpio_pin_set_dt(&dc_motor_sleep, 1);
     }
 
-    for (int i = 0; i < 16; i++)
+    /* Channel range is 0-2048, weapon is 1000-2000 us */
+    uint32_t weapon_speed = (channels->ch[9] / 2) + 1000;
+
+    if (weapon_speed > 2000)
+        weapon_speed = 2000;
+    else if (weapon_speed < 1200)
+        weapon_speed = 1000;
+
+    pwm_set_pulse_dt(&esc_pwm, weapon_speed * NSEC_PER_USEC);
+
+    static int print = 0;
+    if (print++ % 1000 == 0)
     {
-        printk(" %u", channels->ch[i]);
+        printk("%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u\n",
+               channels->ch[0],
+               channels->ch[1],
+               channels->ch[2],
+               channels->ch[3],
+               channels->ch[4],
+               channels->ch[5],
+               channels->ch[6],
+               channels->ch[7],
+               channels->ch[8],
+               channels->ch[9],
+               channels->ch[10],
+               channels->ch[11],
+               channels->ch[12],
+               channels->ch[13],
+               channels->ch[14],
+               channels->ch[15]);
     }
-    printk("\n");
 }
 
 int main(void)
