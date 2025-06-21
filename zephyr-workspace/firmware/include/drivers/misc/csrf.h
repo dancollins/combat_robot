@@ -2,14 +2,14 @@
 #define ZEPHYR_DRIVERS_MISC_CSRF_H_
 
 #include <stdint.h>
+#include <zephyr/kernel.h>
 
 struct csrf_channel_data
 {
     uint16_t ch[16];
 };
 
-typedef void (*csrf_channel_callback_t)(
-    const struct csrf_channel_data *data);
+typedef void (*csrf_channel_callback_t)(const struct csrf_channel_data *data);
 
 struct csrf_driver_api
 {
@@ -17,14 +17,12 @@ struct csrf_driver_api
                                 csrf_channel_callback_t callback);
 };
 
-static inline int csrf_set_channel_callback(
-    const struct device *dev,
-    csrf_channel_callback_t callback)
+static inline int csrf_set_channel_callback(const struct device *dev,
+                                            csrf_channel_callback_t callback)
 {
     const struct csrf_driver_api *api = dev->api;
 
-    if (api == NULL || api->set_channel_callback == NULL)
-    {
+    if (api == NULL || api->set_channel_callback == NULL) {
         return -ENOTSUP;
     }
 

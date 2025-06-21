@@ -48,7 +48,6 @@ K_WORK_DELAYABLE_DEFINE(stop_motors_work, stop_motors_work_handler);
 
 static k_timeout_t stop_motors_timeout = K_MSEC(500);
 
-static bool have_radio = false;
 static bool armed = false;
 
 struct rcmix_data
@@ -69,33 +68,19 @@ static void update_channel_data(struct rcmix_data *data,
      * Weapon ESC is 1000-2000 us.
      * DC motors are 0-20000 us. */
 
-    static unsigned steering_ch = 0;
-    static unsigned throttle_ch = 2;
+    static unsigned left_ch = 2;
+    static unsigned right_ch = 1;
     static unsigned arm_btn = 7;
-    static unsigned reverse_btn = 8;
     static unsigned weapon_ch = 9;
 
-    float throttle = channels->ch[throttle_ch];
-    float steering = channels->ch[steering_ch];
-    bool reverse = channels->ch[reverse_btn] > 1024;
+    float left = channels->ch[left_ch] - 1024;
+    float right = channels->ch[right_ch] - 1024;
     uint16_t weapon = channels->ch[weapon_ch];
 
     armed = channels->ch[arm_btn] > 1024;
 
-    /* Throttle deadband. */
-    if (throttle < 200)
-        throttle = 0;
-
-    throttle /= 2048.0f;
-
-    steering /= 2048.0f;
-    steering -= 0.5f;
-
-    float left = throttle + steering;
-    float right = throttle - steering;
-
-    left = CLAMP(left, -1.0f, 1.0f);
-    right = CLAMP(right, -1.0f, 1.0f);
+    left = CLAMP(left / 1024.0f, -1.0f, 1.0f);
+    right = CLAMP(right / 1024.0f, -1.0f, 1.0f);
 
     data->fleft = (uint32_t)(fabsf(left) * 20000000);
     data->fleft = CLAMP(data->fleft, 0, 20000000);
@@ -122,13 +107,6 @@ static void update_channel_data(struct rcmix_data *data,
         data->rright_dir = false;
     }
 
-    if (reverse) {
-        data->fleft_dir = !data->fleft_dir;
-        data->fright_dir = !data->fright_dir;
-        data->rleft_dir = !data->rleft_dir;
-        data->rright_dir = !data->rright_dir;
-    }
-
     const unsigned weapon_pulse_min = 1000000;
     const unsigned weapon_pulse_max = 2000000;
 
@@ -146,10 +124,19 @@ static void update_channel_data(struct rcmix_data *data,
 
 static void csrf_channel_callback(const struct csrf_channel_data *channels)
 {
+    static unsigned count = 0;
+
     update_channel_data(&rcmix_data, channels);
 
-    have_radio = true;
-    wdt_feed(wdt, 0);
+    count++;
+    if (count > 1000) {
+        printk("ch");
+        for (int i = 0; i < 16; i++) {
+            printk(" %d", channels->ch[i]);
+        }
+        printk("\n");
+        count = 0;
+    }
 
     k_work_reschedule(&stop_motors_work, stop_motors_timeout);
 

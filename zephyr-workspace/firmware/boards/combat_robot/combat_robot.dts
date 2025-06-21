@@ -78,7 +78,7 @@
 		compatible = "gpio-leds";
 
 		dc_dir1: dc_dir1 {
-			gpios = <&gpiob 1 GPIO_ACTIVE_HIGH>;
+			gpios = <&gpiob 1 GPIO_ACTIVE_LOW>;
 			label = "DC Motor 1 direction";
 		};
 	};
@@ -87,7 +87,7 @@
 		compatible = "gpio-leds";
 
 		dc_dir2: dc_dir2 {
-			gpios = <&gpiob 2 GPIO_ACTIVE_HIGH>;
+			gpios = <&gpiob 2 GPIO_ACTIVE_LOW>;
 			label = "DC Motor 2 direction";
 		};
 	};
@@ -126,6 +126,10 @@
 			gpios = <&gpioc 15 GPIO_ACTIVE_LOW>;
 			zephyr,code = <INPUT_KEY_0>;
 		};
+	};
+
+	aliases {
+		watchdog0 = &iwdg;
 	};
 };
 
@@ -263,4 +267,12 @@ zephyr_udc0: &usb {
 
 &vref {
 	status = "okay";
+};
+
+&iwdg {
+	status = "okay";
+};
+
+&wwdg {
+	status = "disabled";
 };
